@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>SIPA Pay — Demo Interactiva</title>
+<style>
+/* ── RESET + BASE ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --dark:   #0B2545;
+  --mid:    #126374;
+  --green:  #21D89F;
+  --white:  #FFFFFF;
+  --gray:   #8FA0B0;
+  --ltgray: #F0F4F8;
+  --card:   #F8FAFC;
+  --border: #E0EAF0;
+  --text:   #2D3748;
+  --muted:  #4A5568;
+  --red:    #E05C5C;
+  --yellow: #E6AC00;
+  --blue:   #1D6FBF;
+}
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--ltgray); color:var(--text); height:100vh; overflow:hidden; display:flex; }
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────── */
+.sidebar { width:220px; background:var(--dark); display:flex; flex-direction:column; flex-shrink:0; height:100vh; }
+.sb-logo { padding:20px 18px 16px; border-bottom:1px solid #1a3a5c; display:flex; align-items:center; gap:10px; }
+.sb-logo-icon { color:var(--green); font-size:20px; letter-spacing:-2px; font-weight:900; }
+.sb-logo-text { font-size:20px; font-weight:800; color:#fff; }
+.sb-logo-text b { color:var(--green); }
+.sb-client { padding:10px 18px; background:#09192e; font-size:10px; color:var(--gray); text-transform:uppercase; letter-spacing:.5px; }
+.sb-client strong { display:block; color:#C8E0EF; font-size:12px; margin-top:2px; text-transform:none; }
+.sb-nav { flex:1; padding:8px 0; overflow-y:auto; }
+.nav-item { display:flex; align-items:center; gap:11px; padding:10px 18px; font-size:13px; color:var(--gray); cursor:pointer; border-left:3px solid transparent; transition:.12s; user-select:none; }
+.nav-item:hover { background:#132D4A; color:#ddd; }
+.nav-item.active { background:#132D4A; color:var(--green); border-left-color:var(--green); font-weight:600; }
+.nav-icon { width:16px; text-align:center; font-size:14px; flex-shrink:0; }
+.sb-footer { padding:14px 18px; border-top:1px solid #1a3a5c; font-size:10px; color:#3a5270; }
+
+/* ── MAIN ─────────────────────────────────────────────────────────── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.topbar { background:#fff; border-bottom:1px solid var(--border); height:54px; padding:0 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar-title { font-size:16px; font-weight:700; color:var(--dark); }
+.topbar-right { display:flex; align-items:center; gap:14px; }
+.tb-badge { background:var(--green); color:var(--dark); padding:2px 10px; border-radius:12px; font-size:11px; font-weight:700; cursor:pointer; }
+.tb-user { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer; }
+.avatar { width:30px; height:30px; background:var(--mid); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; flex-shrink:0; }
+
+/* ── SCREEN CONTAINER ────────────────────────────────────────────── */
+.screen { display:none; flex:1; overflow-y:auto; padding:20px 24px; flex-direction:column; gap:16px; }
+.screen.active { display:flex; }
+
+/* ── CARDS & LAYOUT ──────────────────────────────────────────────── */
+.card { background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.07); }
+.card-header { padding:14px 18px; border-bottom:1px solid var(--ltgray); display:flex; align-items:center; justify-content:space-between; }
+.card-header h3 { font-size:14px; font-weight:700; color:var(--dark); }
+.card-body { padding:18px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+
+/* ── STAT CARDS ──────────────────────────────────────────────────── */
+.stat-card { background:#fff; border-radius:8px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.07); border-top:3px solid var(--border); }
+.stat-card.c-green { border-top-color:var(--green); }
+.stat-card.c-blue  { border-top-color:var(--mid); }
+.stat-card.c-yellow{ border-top-color:var(--yellow); }
+.stat-card.c-red   { border-top-color:var(--red); }
+.stat-label { font-size:10px; color:var(--gray); text-transform:uppercase; letter-spacing:.4px; margin-bottom:5px; display:flex; align-items:center; gap:5px; }
+.dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
+.stat-val  { font-size:21px; font-weight:700; color:var(--dark); }
+.stat-sub  { font-size:10px; color:var(--gray); margin-top:3px; }
+
+.saldo-card { border-radius:8px; padding:18px 22px; }
+.saldo-card.dark { background:var(--dark); }
+.saldo-card.light { background:#fff; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.07); }
+.saldo-lbl { font-size:10px; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; }
+.saldo-card.dark .saldo-lbl { color:var(--gray); }
+.saldo-card.light .saldo-lbl { color:var(--gray); }
+.saldo-val { font-size:26px; font-weight:800; }
+.saldo-card.dark .saldo-val { color:var(--green); }
+.saldo-card.light .saldo-val { color:var(--dark); }
+.saldo-clabe { font-size:11px; font-family:monospace; margin-top:6px; color:var(--gray); }
+
+/* ── TABLE ───────────────────────────────────────────────────────── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12.5px; }
+thead th { background:var(--ltgray); padding:9px 12px; text-align:left; font-size:10.5px; font-weight:700; color:var(--gray); text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--border); white-space:nowrap; }
+tbody tr { border-bottom:1px solid #F8FAFC; cursor:pointer; transition:.1s; }
+tbody tr:hover { background:#F0F9FF; }
+tbody td { padding:10px 12px; }
+.mono { font-family:monospace; font-size:11.5px; color:var(--mid); }
+.fw { font-weight:600; color:var(--dark); }
+
+/* ── BADGES ──────────────────────────────────────────────────────── */
+.badge { display:inline-flex; align-items:center; padding:2px 9px; border-radius:20px; font-size:10.5px; font-weight:700; }
+.b-ok  { background:#D1FAE5; color:#047857; }
+.b-sent{ background:#DBEAFE; color:#1D4ED8; }
+.b-pend{ background:#FEF3C7; color:#B45309; }
+.b-ret { background:#FEE2E2; color:#B91C1C; }
+.b-can { background:#F3F4F6; color:#6B7280; }
+.b-proc{ background:#EDE9FE; color:#5B21B6; }
+
+/* ── BUTTONS ─────────────────────────────────────────────────────── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:.12s; }
+.btn:hover { opacity:.88; }
+.btn:active { transform:scale(.97); }
+.btn-primary { background:var(--dark); color:var(--green); }
+.btn-secondary { background:var(--ltgray); color:var(--mid); }
+.btn-green { background:var(--green); color:var(--dark); }
+.btn-red { background:#FEE2E2; color:#B91C1C; }
+.btn-sm { padding:5px 12px; font-size:11.5px; }
+.btn-xs { padding:3px 10px; font-size:11px; border-radius:4px; }
+
+/* ── FILTERS ROW ─────────────────────────────────────────────────── */
+.filters-row { background:#fff; border-radius:8px; padding:14px 18px; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; box-shadow:0 1px 4px rgba(0,0,0,.07); }
+.fg { display:flex; flex-direction:column; gap:3px; }
+.fg label { font-size:10px; font-weight:700; color:var(--gray); text-transform:uppercase; letter-spacing:.3px; }
+.fg select, .fg input { padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:12.5px; color:var(--text); background:var(--ltgray); outline:none; min-width:130px; }
+.fg select:focus, .fg input:focus { border-color:var(--green); background:#fff; }
+
+/* ── MODAL ───────────────────────────────────────────────────────── */
+.overlay { position:fixed; inset:0; background:rgba(11,37,69,.6); display:none; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(2px); }
+.overlay.open { display:flex; }
+.modal { background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.35); width:100%; animation:slideUp .2s ease; }
+@keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.modal-hd { background:var(--dark); padding:18px 22px; display:flex; justify-content:space-between; align-items:center; }
+.modal-hd h3 { color:#fff; font-size:15px; }
+.modal-close { color:var(--gray); font-size:18px; cursor:pointer; line-height:1; }
+.modal-close:hover { color:#fff; }
+.modal-bd { padding:22px; }
+.modal-ft { padding:14px 22px; border-top:1px solid var(--ltgray); display:flex; gap:8px; justify-content:flex-end; }
+
+/* ── FORM ────────────────────────────────────────────────────────── */
+.form-row { display:grid; gap:14px; margin-bottom:14px; }
+.form-row.c2 { grid-template-columns:1fr 1fr; }
+.form-row.c3 { grid-template-columns:1fr 1fr 1fr; }
+.form-group { display:flex; flex-direction:column; gap:4px; }
+.form-group label { font-size:10px; font-weight:700; color:var(--gray); text-transform:uppercase; letter-spacing:.3px; }
+.form-group input, .form-group select, .form-group textarea {
+  padding:10px 12px; border:1.5px solid var(--border); border-radius:7px;
+  font-size:13px; color:var(--text); outline:none; font-family:inherit;
+  background:var(--ltgray); transition:.12s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--green); background:#fff; }
+.form-group input[readonly] { background:#F8FAFC; color:var(--mid); font-family:monospace; cursor:default; }
+.form-hint { font-size:10.5px; color:var(--gray); }
+.form-err  { font-size:10.5px; color:var(--red); }
+
+/* ── TOAST ───────────────────────────────────────────────────────── */
+.toast-container { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:9999; }
+.toast { padding:12px 18px; border-radius:8px; font-size:13px; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.2); display:flex; align-items:center; gap:10px; animation:toastIn .25s ease; max-width:340px; }
+.toast.t-ok   { background:#0B2545; color:var(--green); }
+.toast.t-err  { background:#FEF2F2; color:#B91C1C; border:1px solid #FCA5A5; }
+.toast.t-warn { background:#FFFBEB; color:#92400E; border:1px solid #FCD34D; }
+@keyframes toastIn { from { transform:translateX(60px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+/* ── PROGRESS ────────────────────────────────────────────────────── */
+.progress-bar { background:var(--border); border-radius:4px; height:7px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:4px; background:linear-gradient(90deg, var(--green), var(--mid)); transition:width .4s; }
+
+/* ── DETAIL PANEL ─────────────────────────────────────────────────── */
+.detail-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--ltgray); font-size:13px; }
+.detail-row:last-child { border:none; }
+.detail-lbl { color:var(--gray); font-size:11.5px; }
+.detail-val { font-weight:600; color:var(--dark); font-size:13px; }
+
+/* ── INFO BOX ─────────────────────────────────────────────────────── */
+.info-box { border-left:4px solid var(--green); background:#F0FBF6; padding:12px 16px; border-radius:6px; font-size:12.5px; color:#1f4f3c; line-height:1.6; }
+.warn-box { border-left:4px solid var(--yellow); background:#FFFBEB; padding:12px 16px; border-radius:6px; font-size:12.5px; color:#78350F; line-height:1.6; }
+.err-box  { border-left:4px solid var(--red); background:#FEF2F2; padding:12px 16px; border-radius:6px; font-size:12.5px; color:#7F1D1D; line-height:1.6; }
+
+/* ── UPLOAD ZONE ─────────────────────────────────────────────────── */
+.upload-zone { border:2px dashed var(--border); border-radius:10px; padding:28px; text-align:center; cursor:pointer; transition:.15s; }
+.upload-zone:hover { border-color:var(--green); background:#F0FBF6; }
+.upload-zone.has-file { border-color:var(--green); background:#F0FBF6; }
+.upload-icon { font-size:28px; margin-bottom:8px; }
+.upload-text { font-size:13px; color:var(--gray); }
+.upload-text strong { color:var(--mid); }
+
+/* ── OTP INPUTS ──────────────────────────────────────────────────── */
+.otp-row { display:flex; gap:10px; justify-content:center; margin:18px 0; }
+.otp-digit { width:48px; height:56px; border:2px solid var(--border); border-radius:8px; text-align:center; font-size:24px; font-weight:700; color:var(--dark); background:var(--ltgray); outline:none; }
+.otp-digit:focus { border-color:var(--green); background:#fff; }
+
+/* ── STEP INDICATOR ──────────────────────────────────────────────── */
+.steps { display:flex; align-items:center; gap:0; margin-bottom:20px; }
+.step { display:flex; align-items:center; }
+.step-circle { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--gray); flex-shrink:0; }
+.step.done .step-circle { background:var(--green); border-color:var(--green); color:var(--dark); }
+.step.active .step-circle { background:var(--dark); border-color:var(--dark); color:var(--green); }
+.step-label { font-size:10.5px; color:var(--gray); margin-left:6px; white-space:nowrap; }
+.step.active .step-label, .step.done .step-label { color:var(--dark); font-weight:600; }
+.step-line { flex:1; height:2px; background:var(--border); margin:0 8px; min-width:20px; }
+.step-line.done { background:var(--green); }
+
+/* ── LOGIN SCREEN ─────────────────────────────────────────────────── */
+#screen-login { background:var(--dark); padding:0; }
+.login-wrap { display:flex; width:100%; height:100%; }
+.login-left { width:360px; flex-shrink:0; background:linear-gradient(160deg,#126374,#0B2545); padding:44px 38px; display:flex; flex-direction:column; justify-content:space-between; }
+.ll-brand { }
+.ll-brand-logo { font-size:26px; font-weight:800; color:#fff; margin-bottom:8px; }
+.ll-brand-logo span { color:var(--green); }
+.ll-brand-tag { font-size:12.5px; color:#C8E0EF; line-height:1.6; margin-bottom:28px; }
+.ll-feat { display:flex; gap:10px; margin-bottom:12px; }
+.ll-feat-dot { width:7px; height:7px; border-radius:50%; background:var(--green); margin-top:5px; flex-shrink:0; }
+.ll-feat-text { font-size:12px; color:#C8E0EF; line-height:1.5; }
+.ll-feat-text strong { color:#fff; display:block; }
+.ll-footer { font-size:10.5px; color:#3a5270; }
+.login-right { flex:1; background:#fff; padding:44px 48px; display:flex; flex-direction:column; justify-content:center; }
+.login-right h2 { font-size:22px; font-weight:800; color:var(--dark); margin-bottom:4px; }
+.login-right p { font-size:12.5px; color:var(--gray); margin-bottom:24px; }
+
+/* ── PAGINATION ───────────────────────────────────────────────────── */
+.pagination { display:flex; gap:4px; align-items:center; }
+.pg-btn { width:28px; height:28px; border:1px solid var(--border); border-radius:5px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:12px; color:var(--mid); background:#fff; }
+.pg-btn:hover { background:var(--ltgray); }
+.pg-btn.active { background:var(--dark); color:var(--green); border-color:var(--dark); font-weight:700; }
+
+/* ── MINI CHART (SVG) ─────────────────────────────────────────────── */
+.mini-chart { width:100%; height:60px; }
+
+/* ── USUARIO ROW ─────────────────────────────────────────────────── */
+.user-row { display:flex; align-items:center; gap:14px; padding:12px 16px; border-bottom:1px solid var(--ltgray); }
+.user-row:last-child { border:none; }
+.user-row:hover { background:var(--card); }
+.user-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; }
+.user-info { flex:1; }
+.user-name { font-size:13px; font-weight:600; color:var(--dark); }
+.user-email { font-size:11.5px; color:var(--gray); }
+.user-role { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; }
+.role-admin { background:#DBEAFE; color:#1D4ED8; }
+.role-op { background:#F3F4F6; color:#374151; }
+
+/* ── WEBHOOK ROW ─────────────────────────────────────────────────── */
+.webhook-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--ltgray); font-size:12.5px; }
+.webhook-row:last-child { border:none; }
+.wh-event { font-weight:600; color:var(--dark); min-width:160px; }
+.wh-url { font-family:monospace; color:var(--mid); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wh-status { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.wh-ok  { background:var(--green); }
+.wh-err { background:var(--red); }
+
+/* ── LIMIT CARD ─────────────────────────────────────────────────── */
+.limit-card { background:var(--card); border-radius:8px; border:1px solid var(--border); padding:16px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.lc-label { font-size:12px; color:var(--gray); margin-bottom:4px; }
+.lc-value { font-size:20px; font-weight:800; color:var(--dark); }
+.lc-bar { flex:1; }
+
+/* ── REPORT CARD ─────────────────────────────────────────────────── */
+.report-card { background:#fff; border-radius:8px; border:1px solid var(--border); padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:.12s; }
+.report-card:hover { border-color:var(--green); box-shadow:0 2px 8px rgba(33,216,159,.15); }
+.rc-icon { width:40px; height:40px; border-radius:8px; background:var(--ltgray); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.rc-title { font-size:13px; font-weight:700; color:var(--dark); }
+.rc-desc { font-size:11.5px; color:var(--gray); margin-top:2px; }
+
+/* ─────────────────────────────────────────────────────────────── */
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ─────────────────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="sb-logo">
+    <span class="sb-logo-icon">⠿</span>
+    <span class="sb-logo-text"><b>S</b>ipa Pay</span>
+  </div>
+  <div class="sb-client">Cliente activo<strong>CATEM México</strong></div>
+  <div class="sb-nav">
+    <div class="nav-item active" onclick="nav('dashboard')" id="nav-dashboard"><span class="nav-icon">⊞</span>Dashboard</div>
+    <div class="nav-item" onclick="nav('transacciones')" id="nav-transacciones"><span class="nav-icon">↔</span>Transacciones</div>
+    <div class="nav-item" onclick="nav('carga')" id="nav-carga"><span class="nav-icon">☰</span>Carga Masiva</div>
+    <div class="nav-item" onclick="nav('depositos')" id="nav-depositos"><span class="nav-icon">↓</span>Depósitos</div>
+    <div class="nav-item" onclick="nav('limites')" id="nav-limites"><span class="nav-icon">⊙</span>Límites</div>
+    <div class="nav-item" onclick="nav('usuarios')" id="nav-usuarios"><span class="nav-icon">👤</span>Usuarios</div>
+    <div class="nav-item" onclick="nav('reportes')" id="nav-reportes"><span class="nav-icon">📊</span>Reportes</div>
+    <div class="nav-item" onclick="nav('integracion')" id="nav-integracion"><span class="nav-icon">⚙</span>Integración</div>
+    <div style="height:12px"></div>
+    <div class="nav-item" id="nav-login" onclick="nav('login')" style="margin-top:auto;"><span class="nav-icon">⏏</span>Cerrar sesión</div>
+  </div>
+  <div class="sb-footer">SIPA Pay v2.1 · Vierge Group</div>
+</nav>
+
+<!-- ── MAIN ────────────────────────────────────────────────────────── -->
+<div class="main">
+  <div class="topbar" id="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <span class="tb-badge" onclick="openModal('modal-nuevatx')">+ Nueva transferencia</span>
+      <div class="tb-user">
+        <div class="avatar">MR</div>
+        <span>Miguel Rodríguez</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DASHBOARD ════════════════════════════════════════════════════ -->
+  <div class="screen active" id="screen-dashboard">
+    <div class="grid-2">
+      <div class="saldo-card dark">
+        <div class="saldo-lbl">Saldo disponible</div>
+        <div class="saldo-val">$2,847,350.00</div>
+        <div class="saldo-clabe">CLABE: 012 180 01234567890 1</div>
+      </div>
+      <div class="saldo-card light">
+        <div class="saldo-lbl">Saldo en tránsito</div>
+        <div class="saldo-val">$486,200.00</div>
+        <div class="saldo-clabe">14 transferencias pendientes de liquidación</div>
+      </div>
+    </div>
+    <div class="grid-4">
+      <div class="stat-card c-green">
+        <div class="stat-label"><span class="dot" style="background:var(--green)"></span>Liquidado (mes)</div>
+        <div class="stat-val">$8,241,600</div>
+        <div class="stat-sub">312 operaciones</div>
+      </div>
+      <div class="stat-card c-blue">
+        <div class="stat-label"><span class="dot" style="background:var(--mid)"></span>Enviado</div>
+        <div class="stat-val">$486,200</div>
+        <div class="stat-sub">14 operaciones</div>
+      </div>
+      <div class="stat-card c-yellow">
+        <div class="stat-label"><span class="dot" style="background:var(--yellow)"></span>Pendiente</div>
+        <div class="stat-val">$124,500</div>
+        <div class="stat-sub">3 operaciones</div>
+      </div>
+      <div class="stat-card c-red">
+        <div class="stat-label"><span class="dot" style="background:var(--red)"></span>Devuelto</div>
+        <div class="stat-val">$18,700</div>
+        <div class="stat-sub">2 operaciones</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3>Movimientos recientes</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="toast('Actualizando...','t-ok')">↻ Actualizar</button>
+          <button class="btn btn-primary btn-sm" onclick="nav('transacciones')">Ver todos →</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Monto</th><th>Estado</th><th>Clave rastreo</th><th>Beneficiario</th><th>Cuenta destino</th></tr></thead>
+          <tbody id="dash-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TRANSACCIONES ════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-transacciones">
+    <div class="filters-row">
+      <div class="fg">
+        <label>Tipo</label>
+        <select onchange="filterTx(this.value)">
+          <option value="all">Todas las transacciones</option>
+          <option value="liquidado">Liquidadas</option>
+          <option value="enviado">Enviadas</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="devuelto">Devueltas</option>
+        </select>
+      </div>
+      <div class="fg"><label>Fecha inicio</label><input type="date" value="2025-06-01"></div>
+      <div class="fg"><label>Fecha fin</label><input type="date" value="2025-06-04"></div>
+      <div class="fg"><label>Buscar</label><input type="text" id="tx-search" placeholder="Beneficiario o rastreo..." oninput="filterTxSearch(this.value)"></div>
+      <button class="btn btn-secondary btn-sm" onclick="toast('Filtros aplicados','t-ok')">🔍 Filtrar</button>
+      <button class="btn btn-primary" onclick="openModal('modal-nuevatx')">+ Nueva transacción</button>
+    </div>
+    <div class="grid-4">
+      <div class="stat-card c-green"><div class="stat-label">Liquidadas</div><div class="stat-val" style="font-size:16px">$8.2M · 312</div></div>
+      <div class="stat-card c-blue"><div class="stat-label">Enviadas</div><div class="stat-val" style="font-size:16px">$486K · 14</div></div>
+      <div class="stat-card c-yellow"><div class="stat-label">Pendientes</div><div class="stat-val" style="font-size:16px">$124K · 3</div></div>
+      <div class="stat-card c-red"><div class="stat-label">Devueltas</div><div class="stat-val" style="font-size:16px">$18.7K · 2</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3 id="tx-count">331 transacciones · Jun 2025</h3>
+        <div class="pagination">
+          <div class="pg-btn">‹</div>
+          <div class="pg-btn active">1</div>
+          <div class="pg-btn">2</div>
+          <div class="pg-btn">3</div>
+          <div class="pg-btn">›</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Monto</th><th>Estado</th><th>Clave rastreo</th><th>Beneficiario</th><th>Cuenta destino</th><th>Acción</th></tr></thead>
+          <tbody id="tx-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CARGA MASIVA ══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-carga">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--dark)">Carga Masiva</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:2px">Procesa cientos de transferencias desde un archivo Excel</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="toast('Descargando plantilla.xlsx...','t-ok')">↓ Descargar plantilla</button>
+        <button class="btn btn-primary" onclick="openModal('modal-nuevacarga')">+ Nueva carga masiva</button>
+      </div>
+    </div>
+    <!-- En proceso -->
+    <div class="card">
+      <div class="card-header">
+        <h3>📄 nomina_junio_2025_semana2.xlsx</h3>
+        <span class="badge b-proc" id="carga-badge">⟳ En proceso</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--gray);margin-bottom:6px">
+          <span id="carga-proc-txt">682 procesadas</span>
+          <span id="carga-pct-txt">68% completado</span>
+          <span id="carga-pend-txt">318 pendientes</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="carga-prog" style="width:68%"></div></div>
+        <div class="grid-4" style="margin-top:14px">
+          <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:var(--dark)" id="cp-total">1,000</div><div style="font-size:11px;color:var(--gray)">Total registros</div></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:#047857" id="cp-proc">682</div><div style="font-size:11px;color:var(--gray)">Procesadas</div></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:var(--yellow)" id="cp-pend">318</div><div style="font-size:11px;color:var(--gray)">Pendientes</div></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:var(--dark)">$4,250,000</div><div style="font-size:11px;color:var(--gray)">Monto total</div></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-green btn-sm" onclick="simProgress()">▶ Simular progreso</button>
+          <button class="btn btn-secondary btn-sm" onclick="openModal('modal-detallecarga')">Ver detalle →</button>
+        </div>
+      </div>
+    </div>
+    <!-- Historial -->
+    <div class="card">
+      <div class="card-header"><h3>Historial de cargas</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Archivo</th><th>Estado</th><th>Registros</th><th>Monto total</th><th>Usuario</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td>04 Jun 09:15</td><td class="mono">nomina_junio_s2.xlsx</td><td><span class="badge b-proc">En proceso</span></td><td>1,000</td><td class="fw">$4,250,000</td><td>M. Rodríguez</td><td><button class="btn btn-secondary btn-xs" onclick="openModal('modal-detallecarga')">Ver detalle</button></td></tr>
+            <tr><td>27 May 08:30</td><td class="mono">nomina_mayo_s4.xlsx</td><td><span class="badge b-ok">Procesado</span></td><td>998</td><td class="fw">$4,218,400</td><td>A. Jiménez</td><td><button class="btn btn-secondary btn-xs" onclick="openModal('modal-detallecarga')">Ver detalle</button></td></tr>
+            <tr><td>20 May 08:45</td><td class="mono">nomina_mayo_s3.xlsx</td><td><span class="badge b-ok">Procesado</span></td><td>1,002</td><td class="fw">$4,301,800</td><td>M. Rodríguez</td><td><button class="btn btn-secondary btn-xs" onclick="openModal('modal-detallecarga')">Ver detalle</button></td></tr>
+            <tr><td>13 May 09:10</td><td class="mono">nomina_mayo_s2.xlsx</td><td><span class="badge b-ok">Procesado</span></td><td>995</td><td class="fw">$4,187,500</td><td>A. Jiménez</td><td><button class="btn btn-secondary btn-xs" onclick="openModal('modal-detallecarga')">Ver detalle</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DEPÓSITOS ════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-depositos">
+    <div class="info-box">💳 Su CLABE para recibir depósitos: <strong style="font-family:monospace;letter-spacing:1px">012 180 01234567890 1</strong> — Comparta este número con quien le vaya a transferir fondos.</div>
+    <div class="grid-2">
+      <div class="stat-card c-green"><div class="stat-label">Depósitos recibidos (mes)</div><div class="stat-val">$3,840,200</div><div class="stat-sub">47 depósitos</div></div>
+      <div class="stat-card c-blue"><div class="stat-label">Depósito más reciente</div><div class="stat-val">$520,000</div><div class="stat-sub">04 Jun 2025 · BBVA</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3>Depósitos recibidos</h3>
+        <div class="fg"><input type="date" value="2025-06-01" style="font-size:12px;padding:5px 8px"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Monto</th><th>Banco origen</th><th>Remitente</th><th>Clave rastreo</th><th>CLABE origen</th></tr></thead>
+          <tbody>
+            <tr onclick="openModal('modal-txdetail', depData[0])"><td>04 Jun 2025 11:22</td><td class="fw" style="color:#047857">+$520,000.00</td><td>BBVA México</td><td>CATEM Nacional A.C.</td><td class="mono">BBVA20250604110</td><td class="mono">012 180 99887766554</td></tr>
+            <tr onclick="openModal('modal-txdetail', depData[1])"><td>03 Jun 2025 16:45</td><td class="fw" style="color:#047857">+$180,000.00</td><td>Banamex</td><td>Confederación Sindical</td><td class="mono">CITI20250603164</td><td class="mono">002 180 11223344550</td></tr>
+            <tr onclick="openModal('modal-txdetail', depData[2])"><td>02 Jun 2025 09:30</td><td class="fw" style="color:#047857">+$940,000.00</td><td>HSBC</td><td>Secretaría del Trabajo</td><td class="mono">HSBC20250602093</td><td class="mono">021 180 55443322110</td></tr>
+            <tr onclick="openModal('modal-txdetail', depData[3])"><td>30 May 2025 14:10</td><td class="fw" style="color:#047857">+$210,000.00</td><td>Santander</td><td>IMSS Convenio 4821</td><td class="mono">SANT20250530141</td><td class="mono">014 180 77665544332</td></tr>
+            <tr onclick="openModal('modal-txdetail', depData[4])"><td>28 May 2025 10:05</td><td class="fw" style="color:#047857">+$1,990,200.00</td><td>Banorte</td><td>STPS Fondo Social</td><td class="mono">BANO20250528100</td><td class="mono">006 180 33221100998</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LÍMITES ══════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-limites">
+    <div class="info-box">Los límites operativos controlan el máximo que puede enviarse por transacción o por día, y el horario en el que se permiten operaciones. Son configurados por el administrador de la plataforma.</div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="openModal('modal-nuevolimite')">+ Agregar límite</button>
+    </div>
+    <div class="grid-3">
+      <div class="limit-card" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="lc-label">Límite por transacción</div>
+        <div class="lc-value">$500,000</div>
+        <div class="progress-bar" style="width:100%;height:5px"><div class="progress-fill" style="width:30%"></div></div>
+        <div style="font-size:11px;color:var(--gray)">Última operación: $150,000 (30% del límite)</div>
+        <button class="btn btn-secondary btn-xs" onclick="openModal('modal-editlimite','tx')">✎ Editar</button>
+      </div>
+      <div class="limit-card" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="lc-label">Límite diario</div>
+        <div class="lc-value">$2,000,000</div>
+        <div class="progress-bar" style="width:100%;height:5px"><div class="progress-fill" style="width:62%"></div></div>
+        <div style="font-size:11px;color:var(--gray)">Usado hoy: $1,243,000 (62% del límite)</div>
+        <button class="btn btn-secondary btn-xs" onclick="openModal('modal-editlimite','dia')">✎ Editar</button>
+      </div>
+      <div class="limit-card" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="lc-label">Horario permitido</div>
+        <div class="lc-value" style="font-size:16px">08:00 – 18:00</div>
+        <div class="progress-bar" style="width:100%;height:5px"><div class="progress-fill" style="width:100%;background:var(--green)"></div></div>
+        <div style="font-size:11px;color:#047857">✓ Dentro del horario permitido (14:22 hrs)</div>
+        <button class="btn btn-secondary btn-xs" onclick="openModal('modal-editlimite','hora')">✎ Editar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ USUARIOS ═════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-usuarios">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:13px;color:var(--gray)">5 usuarios registrados para <strong>CATEM México</strong></div>
+      <button class="btn btn-primary" onclick="openModal('modal-nuevousuario')">+ Nuevo usuario</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Equipo de CATEM México</h3></div>
+      <div id="users-list">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REPORTES ═════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-reportes">
+    <div class="grid-2">
+      <div class="report-card" onclick="openModal('modal-reporte','ordenes')">
+        <div class="rc-icon">📋</div>
+        <div><div class="rc-title">Transferencias enviadas</div><div class="rc-desc">Exporta todas las transferencias del periodo en Excel o PDF</div></div>
+      </div>
+      <div class="report-card" onclick="openModal('modal-reporte','depositos')">
+        <div class="rc-icon">📥</div>
+        <div><div class="rc-title">Depósitos recibidos</div><div class="rc-desc">Histórico de todos los depósitos en el rango seleccionado</div></div>
+      </div>
+      <div class="report-card" onclick="openModal('modal-reporte','balance')">
+        <div class="rc-icon">⚖️</div>
+        <div><div class="rc-title">Balance de cuenta</div><div class="rc-desc">Saldo inicial, movimientos y saldo final por periodo</div></div>
+      </div>
+      <div class="report-card" onclick="openModal('modal-reporte','auditoria')">
+        <div class="rc-icon">🔍</div>
+        <div><div class="rc-title">Auditoría de accesos</div><div class="rc-desc">Registro de logins, acciones y cambios por usuario</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Reportes generados recientemente</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha solicitud</th><th>Tipo</th><th>Periodo</th><th>Formato</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td>04 Jun 14:30</td><td>Transferencias</td><td>Jun 2025</td><td>Excel</td><td><span class="badge b-ok">Listo</span></td><td><button class="btn btn-green btn-xs" onclick="toast('Descargando reporte_jun2025.xlsx','t-ok')">↓ Descargar</button></td></tr>
+            <tr><td>03 Jun 09:15</td><td>Balance</td><td>May 2025</td><td>PDF</td><td><span class="badge b-ok">Listo</span></td><td><button class="btn btn-green btn-xs" onclick="toast('Descargando balance_may2025.pdf','t-ok')">↓ Descargar</button></td></tr>
+            <tr><td>01 Jun 11:00</td><td>Depósitos</td><td>May 2025</td><td>Excel</td><td><span class="badge b-ok">Listo</span></td><td><button class="btn btn-green btn-xs" onclick="toast('Descargando depositos_may2025.xlsx','t-ok')">↓ Descargar</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ INTEGRACIÓN ══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-integracion">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>🔑 Credenciales de API</h3></div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:12px">
+            <label>AccessKey (pública)</label>
+            <input readonly value="ak_catem_prod_7f3a2b1c9d">
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label>SecretKey (privada — no compartir)</label>
+            <input readonly value="sk_••••••••••••••••••••••••••••••" id="sk-input">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn btn-secondary btn-sm" onclick="toggleSK()">👁 Mostrar SecretKey</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-rotatekey')">↻ Rotar claves</button>
+          </div>
+          <div class="info-box" style="margin-top:14px;font-size:11.5px">Use estas claves para firmar peticiones HMAC-SHA512 desde su sistema. Nunca las comparta ni las incluya en código cliente.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>📡 Endpoint base</h3></div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:10px">
+            <label>URL de producción</label>
+            <input readonly value="https://api.sipavg.com/v1">
+          </div>
+          <div class="form-group" style="margin-bottom:14px">
+            <label>URL de pruebas (UAT)</label>
+            <input readonly value="https://dev.sipavg.com/v1">
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="toast('Ping exitoso: 42ms ✓','t-ok')">⚡ Probar conexión</button>
+          <div style="margin-top:12px;font-size:12px;color:var(--gray)">Consulte la <span style="color:var(--mid);cursor:pointer" onclick="toast('Abriendo documentación...','t-ok')">documentación completa →</span> para los 45+ endpoints disponibles.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3>🔔 Webhooks configurados</h3>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-nuevowebhook')">+ Agregar webhook</button>
+      </div>
+      <div id="webhooks-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ LOGIN ════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-login" style="padding:0">
+    <div class="login-wrap">
+      <div class="login-left">
+        <div class="ll-brand">
+          <div class="ll-brand-logo"><span style="color:var(--green)">S</span>ipa Pay</div>
+          <div class="ll-brand-tag">Sistema Integral de Pagos Automatizados para empresas en México</div>
+          <div class="ll-feat"><div class="ll-feat-dot"></div><div class="ll-feat-text"><strong>Transferencias SPEI instantáneas</strong>Liquide pagos a cualquier banco en México</div></div>
+          <div class="ll-feat"><div class="ll-feat-dot"></div><div class="ll-feat-text"><strong>Carga masiva desde Excel</strong>Procese miles de transferencias en un archivo</div></div>
+          <div class="ll-feat"><div class="ll-feat-dot"></div><div class="ll-feat-text"><strong>Seguridad bancaria MFA</strong>3 factores: contraseña + OTP + JWT cifrado</div></div>
+          <div class="ll-feat"><div class="ll-feat-dot"></div><div class="ll-feat-text"><strong>API REST documentada</strong>Intégrese con su ERP o sistema propio</div></div>
+        </div>
+        <div class="ll-footer">© 2025 Vierge Group · sipavg.com</div>
+      </div>
+      <div class="login-right" id="login-step1">
+        <h2>Iniciar sesión</h2>
+        <p>Ingrese sus credenciales para acceder a su cuenta</p>
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Correo electrónico</label>
+          <input type="email" id="login-email" value="mrodriguez@catem.org.mx">
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label>Contraseña</label>
+          <input type="password" id="login-pass" value="MiContrasena2025!">
+        </div>
+        <div style="text-align:right;margin-bottom:16px;font-size:12px;color:var(--mid);cursor:pointer" onclick="toast('Correo de recuperación enviado','t-ok')">¿Olvidé mi contraseña?</div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()">Iniciar sesión →</button>
+        <div style="margin-top:14px;padding:10px 14px;background:var(--ltgray);border-radius:7px;font-size:12px;color:var(--muted)">🔐 Se solicitará un código OTP de Google Authenticator para completar el acceso</div>
+      </div>
+      <!-- OTP step (hidden initially) -->
+      <div class="login-right" id="login-step2" style="display:none">
+        <h2>Verificación OTP</h2>
+        <p>Ingrese el código de 6 dígitos de su app autenticadora</p>
+        <div style="display:flex;align-items:center;gap:10px;background:var(--ltgray);padding:12px 14px;border-radius:8px;margin-bottom:18px">
+          <span style="font-size:22px">📱</span>
+          <div><div style="font-size:12px;font-weight:700;color:var(--dark)">Google Authenticator</div><div style="font-size:11.5px;color:var(--gray)">Abra la app y busque la cuenta SIPA</div></div>
+        </div>
+        <div class="otp-row">
+          <input class="otp-digit" maxlength="1" id="otp0" oninput="otpNext(0)" value="4">
+          <input class="otp-digit" maxlength="1" id="otp1" oninput="otpNext(1)" value="8">
+          <input class="otp-digit" maxlength="1" id="otp2" oninput="otpNext(2)" value="3">
+          <input class="otp-digit" maxlength="1" id="otp3" oninput="otpNext(3)" autofocus>
+          <input class="otp-digit" maxlength="1" id="otp4" oninput="otpNext(4)">
+          <input class="otp-digit" maxlength="1" id="otp5" oninput="otpNext(5)">
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doOTP()">Verificar →</button>
+        <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--gray)">¿No recibe el código? <span style="color:var(--mid);cursor:pointer" onclick="toast('Código reenviado','t-ok')">Reenviar</span></div>
+      </div>
+    </div>
+  </div>
+</div><!-- /.main -->
+
+<!-- ════════════════════════════════════════════════════════════════
+     MODALES
+═══════════════════════════════════════════════════════════════════ -->
+
+<!-- Nueva Transferencia -->
+<div class="overlay" id="modal-nuevatx">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hd"><h3>Nueva Transferencia</h3><span class="modal-close" onclick="closeModal('modal-nuevatx')">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-row"><div class="form-group"><label>Cuenta origen (CLABE)</label><input readonly value="012 180 01234567890 1"></div></div>
+      <div class="form-row c2">
+        <div class="form-group"><label>Banco destino</label><select id="tx-banco"><option>012 - BBVA México</option><option>002 - Banamex</option><option>006 - Bancomext</option><option>014 - Santander</option><option>021 - HSBC</option></select></div>
+        <div class="form-group"><label>CLABE destino (18 dígitos)</label><input id="tx-clabe" placeholder="012XXXXXXXXXX1" maxlength="18" oninput="validateCLABE(this)"></div>
+      </div>
+      <div class="form-row"><div class="form-group"><label>Nombre del beneficiario</label><input id="tx-bene" placeholder="Nombre completo o razón social"></div></div>
+      <div class="form-row c2">
+        <div class="form-group"><label>Monto (MXN)</label><input id="tx-monto" type="number" placeholder="0.00" oninput="checkLimite(this)"></div>
+        <div class="form-group"><label>Fecha de pago</label><input id="tx-fecha" type="date" value="2025-06-05"></div>
+      </div>
+      <div class="form-row"><div class="form-group"><label>Concepto</label><input id="tx-concepto" placeholder="Descripción del pago"></div></div>
+      <div id="tx-warning" style="display:none" class="warn-box">⚠️ El monto supera su límite por transacción de $500,000 MXN</div>
+      <div id="tx-ok" style="display:none" class="info-box">✓ CLABE válida · Banco: BBVA México · Dígito control correcto</div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('modal-nuevatx')">Cancelar</button>
+      <button class="btn btn-primary" onclick="enviarTx()">Enviar transferencia →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detalle de Transacción -->
+<div class="overlay" id="modal-txdetail">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd"><h3>Detalle de operación</h3><span class="modal-close" onclick="closeModal('modal-txdetail')">✕</span></div>
+    <div class="modal-bd" id="modal-txdetail-body">
+      <!-- filled by JS -->
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-red btn-sm" id="btn-cancelar-tx" style="display:none" onclick="cancelarTx()">✕ Cancelar operación</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-txdetail')">Cerrar</button>
+      <button class="btn btn-green btn-sm" onclick="toast('Comprobante descargado','t-ok')">↓ Comprobante PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nueva Carga Masiva -->
+<div class="overlay" id="modal-nuevacarga">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd"><h3>Nueva Carga Masiva</h3><span class="modal-close" onclick="closeModal('modal-nuevacarga')">✕</span></div>
+    <div class="modal-bd">
+      <div class="upload-zone" id="dropzone" onclick="simulateUpload()">
+        <div class="upload-icon" id="dz-icon">📁</div>
+        <div class="upload-text" id="dz-text">Haga clic o arrastre el archivo aquí<br><strong>Formatos aceptados: .xlsx, .xls</strong></div>
+      </div>
+      <div id="upload-preview" style="display:none;margin-top:14px">
+        <div class="info-box">
+          <div style="font-weight:700;margin-bottom:6px">📄 nomina_julio_semana1.xlsx</div>
+          <div>1,250 filas detectadas · $5,312,500 total estimado</div>
+          <div style="margin-top:8px">
+            <span style="color:#047857">✓ 1,248 filas válidas</span> &nbsp;
+            <span style="color:var(--red)">✗ 2 filas con errores (CLABE inválida — fila 45, 312)</span>
+          </div>
+        </div>
+        <div class="err-box" style="margin-top:10px;font-size:12px">
+          <strong>Fila 45:</strong> CLABE 01218099887700000 — dígito de control inválido<br>
+          <strong>Fila 312:</strong> Banco destino "XXX" no encontrado en catálogo
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('modal-nuevacarga')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-procesar" style="display:none" onclick="procesarCarga()">Procesar 1,248 filas válidas →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detalle Carga Masiva -->
+<div class="overlay" id="modal-detallecarga">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hd"><h3>Detalle: nomina_junio_2025_semana2.xlsx</h3><span class="modal-close" onclick="closeModal('modal-detallecarga')">✕</span></div>
+    <div class="modal-bd">
+      <div class="grid-4" style="margin-bottom:14px">
+        <div style="text-align:center"><div class="fw" style="font-size:18px">682</div><div style="font-size:10.5px;color:var(--gray)">Procesadas</div></div>
+        <div style="text-align:center"><div class="fw" style="font-size:18px;color:var(--yellow)">318</div><div style="font-size:10.5px;color:var(--gray)">Pendientes</div></div>
+        <div style="text-align:center"><div class="fw" style="font-size:18px;color:var(--red)">0</div><div style="font-size:10.5px;color:var(--gray)">Con error</div></div>
+        <div style="text-align:center"><div class="fw" style="font-size:18px">$4,250,000</div><div style="font-size:10.5px;color:var(--gray)">Monto total</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Beneficiario</th><th>CLABE destino</th><th>Monto</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>001</td><td>Juan García López</td><td class="mono">012 180 00123456789</td><td class="fw">$4,250.00</td><td><span class="badge b-ok">Procesada</span></td></tr>
+            <tr><td>002</td><td>María Torres Ruiz</td><td class="mono">040 180 09876543210</td><td class="fw">$4,250.00</td><td><span class="badge b-ok">Procesada</span></td></tr>
+            <tr><td>003</td><td>Roberto Sánchez M.</td><td class="mono">006 180 55667788990</td><td class="fw">$4,250.00</td><td><span class="badge b-ok">Procesada</span></td></tr>
+            <tr><td>004</td><td>Ana Flores Vega</td><td class="mono">021 180 33445566778</td><td class="fw">$4,250.00</td><td><span class="badge b-pend">Pendiente</span></td></tr>
+            <tr><td>005</td><td>Carlos Mendoza R.</td><td class="mono">012 180 11223344556</td><td class="fw">$4,250.00</td><td><span class="badge b-pend">Pendiente</span></td></tr>
+            <tr><td>...</td><td colspan="4" style="color:var(--gray);font-size:12px">995 filas más...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" onclick="closeModal('modal-detallecarga')">Cerrar</button><button class="btn btn-green btn-sm" onclick="toast('Descargando reporte.xlsx','t-ok')">↓ Exportar detalle</button></div>
+  </div>
+</div>
+
+<!-- Nuevo Límite -->
+<div class="overlay" id="modal-nuevolimite">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd"><h3>Agregar Límite Operativo</h3><span class="modal-close" onclick="closeModal('modal-nuevolimite')">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-row"><div class="form-group"><label>Tipo de límite</label><select id="lim-tipo" onchange="showLimitFields(this.value)"><option value="">— Seleccione —</option><option value="tx">Límite por transacción</option><option value="dia">Límite diario</option><option value="hora">Horario permitido</option></select></div></div>
+      <div id="lim-monto-row" style="display:none">
+        <div class="form-row"><div class="form-group"><label>Monto máximo (MXN)</label><input type="number" id="lim-monto" placeholder="500000"></div></div>
+      </div>
+      <div id="lim-hora-row" style="display:none">
+        <div class="form-row c2">
+          <div class="form-group"><label>Hora inicio</label><input type="time" value="08:00"></div>
+          <div class="form-group"><label>Hora fin</label><input type="time" value="18:00"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" onclick="closeModal('modal-nuevolimite')">Cancelar</button><button class="btn btn-primary" onclick="guardarLimite()">Guardar límite</button></div>
+  </div>
+</div>
+
+<!-- Editar Límite -->
+<div class="overlay" id="modal-editlimite">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hd"><h3 id="editlim-title">Editar límite</h3><span class="modal-close" onclick="closeModal('modal-editlimite')">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-row"><div class="form-group"><label id="editlim-label">Nuevo valor</label><input id="editlim-input" type="number"></div></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-red btn-sm" onclick="toast('Límite eliminado','t-warn');closeModal('modal-editlimite')">✕ Eliminar</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-editlimite')">Cancelar</button>
+      <button class="btn btn-primary" onclick="toast('Límite actualizado correctamente','t-ok');closeModal('modal-editlimite')">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nuevo Usuario -->
+<div class="overlay" id="modal-nuevousuario">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd"><h3>Nuevo Usuario</h3><span class="modal-close" onclick="closeModal('modal-nuevousuario')">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-row c2">
+        <div class="form-group"><label>Nombre(s)</label><input id="u-nombre" placeholder="Nombre"></div>
+        <div class="form-group"><label>Apellidos</label><input id="u-apellido" placeholder="Apellidos"></div>
+      </div>
+      <div class="form-row"><div class="form-group"><label>Correo electrónico</label><input id="u-email" type="email" placeholder="usuario@empresa.com"></div></div>
+      <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;margin-top:4px">Módulos con acceso</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="permisos-grid">
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer"><input type="checkbox" checked> Transacciones</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer"><input type="checkbox" checked> Carga Masiva</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer"><input type="checkbox" checked> Depósitos</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer"><input type="checkbox"> Usuarios</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer"><input type="checkbox" checked> Reportes</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer"><input type="checkbox"> Integración</label>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" onclick="closeModal('modal-nuevousuario')">Cancelar</button><button class="btn btn-primary" onclick="crearUsuario()">Crear usuario</button></div>
+  </div>
+</div>
+
+<!-- Editar Usuario -->
+<div class="overlay" id="modal-editusuario">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd"><h3>Editar usuario</h3><span class="modal-close" onclick="closeModal('modal-editusuario')">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-row c2">
+        <div class="form-group"><label>Nombre(s)</label><input id="eu-nombre"></div>
+        <div class="form-group"><label>Apellidos</label><input id="eu-apellido"></div>
+      </div>
+      <div class="form-row"><div class="form-group"><label>Correo (no editable)</label><input id="eu-email" readonly style="color:var(--gray)"></div></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-secondary btn-sm" onclick="toast('Contraseña temporal enviada al correo','t-ok')">🔑 Restablecer contraseña</button>
+        <button class="btn btn-red btn-sm" onclick="desactivarUsuario()">⊗ Desactivar</button>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" onclick="closeModal('modal-editusuario')">Cancelar</button><button class="btn btn-primary" onclick="toast('Usuario actualizado','t-ok');closeModal('modal-editusuario')">Guardar cambios</button></div>
+  </div>
+</div>
+
+<!-- Reporte -->
+<div class="overlay" id="modal-reporte">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd"><h3 id="rep-title">Generar reporte</h3><span class="modal-close" onclick="closeModal('modal-reporte')">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-row c2">
+        <div class="form-group"><label>Fecha inicio</label><input type="date" value="2025-06-01"></div>
+        <div class="form-group"><label>Fecha fin</label><input type="date" value="2025-06-30"></div>
+      </div>
+      <div class="form-row"><div class="form-group"><label>Formato</label><select><option>Excel (.xlsx)</option><option>PDF</option></select></div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" onclick="closeModal('modal-reporte')">Cancelar</button><button class="btn btn-primary" onclick="generarReporte()">Generar y descargar</button></div>
+  </div>
+</div>
+
+<!-- Webhook -->
+<div class="overlay" id="modal-nuevowebhook">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd"><h3>Nuevo Webhook</h3><span class="modal-close" onclick="closeModal('modal-nuevowebhook')">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-row"><div class="form-group"><label>Tipo de evento</label><select id="wh-event"><option>Pago liquidado</option><option>Pago devuelto</option><option>Carga procesada</option></select></div></div>
+      <div class="form-row"><div class="form-group"><label>URL de destino (HTTPS)</label><input id="wh-url" placeholder="https://su-servidor.com/webhook"></div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" onclick="closeModal('modal-nuevowebhook')">Cancelar</button><button class="btn btn-primary" onclick="agregarWebhook()">Agregar webhook</button></div>
+  </div>
+</div>
+
+<!-- Rotar claves -->
+<div class="overlay" id="modal-rotatekey">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hd"><h3>Rotar claves de API</h3><span class="modal-close" onclick="closeModal('modal-rotatekey')">✕</span></div>
+    <div class="modal-bd">
+      <div class="err-box">⚠️ Al rotar sus claves, las actuales quedarán inválidas de inmediato. Actualice su sistema antes de confirmar esta acción.</div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-secondary" onclick="closeModal('modal-rotatekey')">Cancelar</button><button class="btn btn-red" onclick="toast('Claves rotadas. Descargue las nuevas claves.','t-warn');closeModal('modal-rotatekey')">Confirmar rotación</button></div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── JS ───────────────────────────────────────────────────────────── -->
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────
+const txData = [
+  {id:'SIPAV20250604001',fecha:'04 Jun 14:32',monto:'$45,000.00',estado:'liquidado',bene:'Juan García López',clabe:'012 180 00123456789',banco:'BBVA',concepto:'Apoyo quincenal jun-2025',origen:'012 180 01234567890'},
+  {id:'SIPAV20250604002',fecha:'04 Jun 14:28',monto:'$12,500.00',estado:'liquidado',bene:'María Torres Ruiz',clabe:'040 180 09876543210',banco:'Scotiabank',concepto:'Beneficio social jun-2025',origen:'012 180 01234567890'},
+  {id:'SIPAV20250604003',fecha:'04 Jun 13:45',monto:'$88,000.00',estado:'enviado',bene:'Constructora Norma SA',clabe:'002 180 11223344550',banco:'Banamex',concepto:'Contrato obra civil #2025-A',origen:'012 180 01234567890'},
+  {id:'SIPAV20250604004',fecha:'04 Jun 13:20',monto:'$6,750.00',estado:'liquidado',bene:'Roberto Sánchez M.',clabe:'006 180 55667788990',banco:'Bancomext',concepto:'Ayuda despensa jun',origen:'012 180 01234567890'},
+  {id:'SIPAV20250604005',fecha:'04 Jun 12:55',monto:'$150,000.00',estado:'enviado',bene:'Proveedor Logística MX',clabe:'012 180 99887766554',banco:'BBVA',concepto:'Flete junio — 3 rutas',origen:'012 180 01234567890'},
+  {id:'SIPAV20250604006',fecha:'04 Jun 11:30',monto:'$3,200.00',estado:'pendiente',bene:'Ana Flores Vega',clabe:'021 180 33445566778',banco:'HSBC',concepto:'Bono asistencia perfecta',origen:'012 180 01234567890'},
+  {id:'SIPAV20250604007',fecha:'04 Jun 10:15',monto:'$27,800.00',estado:'liquidado',bene:'Servicios Tech Delta',clabe:'058 180 12345098765',banco:'Banregio',concepto:'Soporte sistemas may-2025',origen:'012 180 01234567890'},
+  {id:'SIPAV20250603022',fecha:'03 Jun 17:48',monto:'$9,100.00',estado:'devuelto',bene:'Pedro Jiménez R.',clabe:'014 180 09090909090',banco:'Santander',concepto:'Préstamo personal #445',origen:'012 180 01234567890'},
+];
+
+const depData = [
+  {id:'DEP001',fecha:'04 Jun 11:22',monto:'+$520,000.00',estado:'liquidado',bene:'CATEM Nacional A.C.',clabe:'012 180 99887766554',banco:'BBVA',concepto:'Aportación mensual jun-2025'},
+  {id:'DEP002',fecha:'03 Jun 16:45',monto:'+$180,000.00',estado:'liquidado',bene:'Confederación Sindical',clabe:'002 180 11223344550',banco:'Banamex',concepto:'Fondo social 2025-06'},
+  {id:'DEP003',fecha:'02 Jun 09:30',monto:'+$940,000.00',estado:'liquidado',bene:'Secretaría del Trabajo',clabe:'021 180 55443322110',banco:'HSBC',concepto:'Transferencia programas ST'},
+  {id:'DEP004',fecha:'30 May 14:10',monto:'+$210,000.00',estado:'liquidado',bene:'IMSS Convenio 4821',clabe:'014 180 77665544332',banco:'Santander',concepto:'Convenio IMSS clave 4821'},
+  {id:'DEP005',fecha:'28 May 10:05',monto:'+$1,990,200.00',estado:'liquidado',bene:'STPS Fondo Social',clabe:'006 180 33221100998',banco:'Banorte',concepto:'Fondo social 2025-T2'},
+];
+
+const usersData = [
+  {nombre:'Miguel Rodríguez',email:'mrodriguez@catem.org.mx',rol:'Administrador',color:'#0B2545',initials:'MR',activo:true},
+  {nombre:'Ana Jiménez',email:'ajimenez@catem.org.mx',rol:'Operador',color:'#126374',initials:'AJ',activo:true},
+  {nombre:'Carlos Mendoza',email:'cmendoza@catem.org.mx',rol:'Operador',color:'#5B21B6',initials:'CM',activo:true},
+  {nombre:'Laura Vega',email:'lvega@catem.org.mx',rol:'Operador',color:'#B45309',initials:'LV',activo:true},
+  {nombre:'Fernando Ríos',email:'frios@catem.org.mx',rol:'Operador',color:'#047857',initials:'FR',activo:false},
+];
+
+const webhooksData = [
+  {evento:'Pago liquidado',url:'https://catem.org.mx/api/sipa/pagos',ok:true},
+  {evento:'Pago devuelto',url:'https://catem.org.mx/api/sipa/devoluciones',ok:true},
+  {evento:'Carga procesada',url:'https://catem.org.mx/api/sipa/cargas',ok:false},
+];
+
+// ── BADGE HELPER ──────────────────────────────────────────────────────
+function badge(estado){
+  const m={liquidado:'b-ok Liquidado',enviado:'b-sent Enviado',pendiente:'b-pend Pendiente',devuelto:'b-ret Devuelto',cancelado:'b-can Cancelado'};
+  const [cls,lbl]=(m[estado]||'b-can '+estado).split(' ');
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+// ── RENDER FUNCTIONS ──────────────────────────────────────────────────
+function renderDash(){
+  const tbody=document.getElementById('dash-table');
+  tbody.innerHTML=txData.slice(0,8).map(t=>`
+    <tr onclick="openModal('modal-txdetail',${JSON.stringify(t).replace(/"/g,'&quot;')})">
+      <td>${t.fecha}</td><td class="fw">${t.monto}</td><td>${badge(t.estado)}</td>
+      <td class="mono">${t.id}</td><td>${t.bene}</td><td class="mono">${t.clabe}</td>
+    </tr>`).join('');
+}
+
+let allTx=[...txData];
+function renderTx(data){
+  data=data||allTx;
+  const tbody=document.getElementById('tx-table');
+  tbody.innerHTML=data.map(t=>`
+    <tr onclick="openModal('modal-txdetail',${JSON.stringify(t).replace(/"/g,'&quot;')})">
+      <td>${t.fecha}</td><td class="fw">${t.monto}</td><td>${badge(t.estado)}</td>
+      <td class="mono">${t.id}</td><td>${t.bene}</td><td class="mono">${t.clabe}</td>
+      <td>${t.estado==='pendiente'?'<button class="btn btn-red btn-xs" onclick="event.stopPropagation();cancelRow(this)">Cancelar</button>':''}</td>
+    </tr>`).join('');
+  document.getElementById('tx-count').textContent=`${data.length} transacciones · Jun 2025`;
+}
+
+function renderUsers(){
+  const el=document.getElementById('users-list');
+  el.innerHTML=usersData.map((u,i)=>`
+    <div class="user-row">
+      <div class="user-avatar" style="background:${u.color}">${u.initials}</div>
+      <div class="user-info">
+        <div class="user-name">${u.nombre} ${u.activo?'':'<span style="font-size:10px;color:var(--gray)">(Inactivo)</span>'}</div>
+        <div class="user-email">${u.email}</div>
+      </div>
+      <span class="user-role ${u.rol==='Administrador'?'role-admin':'role-op'}">${u.rol}</span>
+      <button class="btn btn-secondary btn-xs" onclick="editUser(${i})">✎ Editar</button>
+      <button class="btn btn-secondary btn-xs" onclick="toast('Contraseña restablecida y enviada al correo','t-ok')">🔑 Reset pwd</button>
+    </div>`).join('');
+}
+
+function renderWebhooks(){
+  const el=document.getElementById('webhooks-list');
+  el.innerHTML=webhooksData.map((w,i)=>`
+    <div class="webhook-row">
+      <div class="wh-event">${w.evento}</div>
+      <div class="wh-url">${w.url}</div>
+      <div class="wh-status ${w.ok?'wh-ok':'wh-err'}" title="${w.ok?'Activo':'Error en último envío'}"></div>
+      <button class="btn btn-secondary btn-xs" onclick="toast('Webhook de prueba enviado — HTTP 200','t-ok')">⚡ Probar</button>
+      <button class="btn btn-red btn-xs" onclick="eliminarWebhook(${i})">✕</button>
+    </div>`).join('');
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────
+function nav(page){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('screen-'+page).classList.add('active');
+  const ni=document.getElementById('nav-'+page);
+  if(ni) ni.classList.add('active');
+  const titles={dashboard:'Dashboard',transacciones:'Transacciones',carga:'Carga Masiva',depositos:'Depósitos',limites:'Límites Operativos',usuarios:'Usuarios',reportes:'Reportes',integracion:'Integración API',login:'Cerrar sesión'};
+  document.getElementById('page-title').textContent=titles[page]||page;
+  const tb=document.getElementById('topbar');
+  tb.style.display=page==='login'?'none':'flex';
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────
+function openModal(id, data){
+  if(id==='modal-txdetail' && data){
+    if(typeof data==='string') data=JSON.parse(data.replace(/&quot;/g,'"'));
+    const canCancel=data.estado==='pendiente'||data.estado==='enviado';
+    document.getElementById('btn-cancelar-tx').style.display=canCancel?'inline-flex':'none';
+    document.getElementById('modal-txdetail-body').innerHTML=`
+      <div class="detail-row"><span class="detail-lbl">ID de orden</span><span class="detail-val mono">${data.id}</span></div>
+      <div class="detail-row"><span class="detail-lbl">Fecha y hora</span><span class="detail-val">${data.fecha}</span></div>
+      <div class="detail-row"><span class="detail-lbl">Estado</span>${badge(data.estado)}</div>
+      <div class="detail-row"><span class="detail-lbl">Beneficiario</span><span class="detail-val">${data.bene}</span></div>
+      <div class="detail-row"><span class="detail-lbl">Banco destino</span><span class="detail-val">${data.banco}</span></div>
+      <div class="detail-row"><span class="detail-lbl">CLABE destino</span><span class="detail-val mono">${data.clabe}</span></div>
+      <div class="detail-row"><span class="detail-lbl">Cuenta origen</span><span class="detail-val mono">${data.origen}</span></div>
+      <div class="detail-row"><span class="detail-lbl">Monto</span><span class="detail-val" style="font-size:17px;color:var(--dark)">${data.monto}</span></div>
+      <div class="detail-row"><span class="detail-lbl">Concepto</span><span class="detail-val">${data.concepto}</span></div>
+      ${data.estado==='devuelto'?'<div class="err-box" style="margin-top:10px">Motivo de devolución: CLABE no activa en institución receptora (código SPEI: 002)</div>':''}
+    `;
+  }
+  if(id==='modal-reporte' && data){
+    const t={ordenes:'Transferencias enviadas',depositos:'Depósitos recibidos',balance:'Balance de cuenta',auditoria:'Auditoría de accesos'};
+    document.getElementById('rep-title').textContent='Generar: '+t[data];
+  }
+  if(id==='modal-editlimite' && data){
+    const m={tx:['Límite por transacción','Monto máximo por operación (MXN)','500000'],dia:['Límite diario','Monto máximo diario (MXN)','2000000'],hora:['Horario permitido','(use el modal de edición de horario)','']};
+    const [title,label,val]=m[data]||['Editar límite','Valor',''];
+    document.getElementById('editlim-title').textContent=title;
+    document.getElementById('editlim-label').textContent=label;
+    document.getElementById('editlim-input').value=val;
+  }
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close on overlay click
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function toast(msg,type='t-ok'){
+  const c=document.getElementById('toast-container');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  const icon={'t-ok':'✓','t-err':'✕','t-warn':'⚠️'}[type]||'•';
+  el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(40px)'; el.style.transition='.3s'; setTimeout(()=>el.remove(),300); },3000);
+}
+
+// ── TX ACTIONS ────────────────────────────────────────────────────────
+function filterTx(estado){
+  const filtered=estado==='all'?txData:txData.filter(t=>t.estado===estado);
+  renderTx(filtered);
+}
+function filterTxSearch(q){
+  const filtered=txData.filter(t=>t.bene.toLowerCase().includes(q.toLowerCase())||t.id.includes(q));
+  renderTx(filtered);
+}
+function cancelRow(btn){
+  const row=btn.closest('tr');
+  row.querySelector('.badge').className='badge b-can';
+  row.querySelector('.badge').textContent='Cancelado';
+  btn.remove();
+  toast('Transferencia cancelada correctamente','t-ok');
+}
+function cancelarTx(){
+  toast('Transferencia cancelada','t-ok');
+  closeModal('modal-txdetail');
+}
+function enviarTx(){
+  const monto=parseFloat(document.getElementById('tx-monto').value)||0;
+  const bene=document.getElementById('tx-bene').value;
+  const clabe=document.getElementById('tx-clabe').value;
+  if(!bene||!clabe||!monto){ toast('Complete todos los campos requeridos','t-err'); return; }
+  if(monto>500000){ toast('El monto supera el límite por transacción','t-err'); return; }
+  closeModal('modal-nuevatx');
+  toast(`Transferencia de $${monto.toLocaleString()} enviada a ${bene}`,'t-ok');
+  // Add to table
+  const newTx={id:'SIPAV2025NEW'+Math.floor(Math.random()*100),fecha:'Ahora',monto:'$'+monto.toLocaleString()+'.00',estado:'pendiente',bene,clabe,banco:'—',concepto:document.getElementById('tx-concepto').value||'—',origen:'012 180 01234567890'};
+  txData.unshift(newTx);
+  renderTx(); renderDash();
+}
+function validateCLABE(input){
+  const v=input.value.replace(/\D/g,'');
+  const ok=v.length===18;
+  document.getElementById('tx-ok').style.display=ok?'block':'none';
+}
+function checkLimite(input){
+  document.getElementById('tx-warning').style.display=parseFloat(input.value)>500000?'block':'none';
+}
+
+// ── CARGA MASIVA ──────────────────────────────────────────────────────
+let progVal=68;
+function simProgress(){
+  if(progVal>=100){ toast('Carga completada ✓','t-ok'); return; }
+  const step=Math.min(100-progVal, Math.floor(Math.random()*12)+5);
+  progVal=Math.min(100,progVal+step);
+  const proc=Math.round(1000*progVal/100);
+  const pend=1000-proc;
+  document.getElementById('carga-prog').style.width=progVal+'%';
+  document.getElementById('carga-proc-txt').textContent=`${proc} procesadas`;
+  document.getElementById('carga-pct-txt').textContent=`${progVal}% completado`;
+  document.getElementById('carga-pend-txt').textContent=pend>0?`${pend} pendientes`:'¡Completo!';
+  document.getElementById('cp-proc').textContent=proc;
+  document.getElementById('cp-pend').textContent=pend;
+  if(progVal>=100){
+    document.getElementById('carga-badge').textContent='✓ Procesado';
+    document.getElementById('carga-badge').className='badge b-ok';
+    toast('¡Carga masiva completada! 1,000/1,000 procesadas','t-ok');
+  }
+}
+
+let uploadDone=false;
+function simulateUpload(){
+  if(uploadDone) return;
+  uploadDone=true;
+  const dz=document.getElementById('dropzone');
+  dz.classList.add('has-file');
+  document.getElementById('dz-icon').textContent='⏳';
+  document.getElementById('dz-text').textContent='Validando archivo...';
+  setTimeout(()=>{
+    document.getElementById('dz-icon').textContent='📄';
+    document.getElementById('dz-text').innerHTML='<strong>nomina_julio_semana1.xlsx</strong> — cargado correctamente';
+    document.getElementById('upload-preview').style.display='block';
+    document.getElementById('btn-procesar').style.display='inline-flex';
+  },1200);
+}
+
+function procesarCarga(){
+  closeModal('modal-nuevacarga');
+  toast('Carga iniciada: 1,248 transferencias en proceso','t-ok');
+  uploadDone=false;
+}
+
+// ── LÍMITES ───────────────────────────────────────────────────────────
+function showLimitFields(v){
+  document.getElementById('lim-monto-row').style.display=(v==='tx'||v==='dia')?'block':'none';
+  document.getElementById('lim-hora-row').style.display=v==='hora'?'block':'none';
+}
+function guardarLimite(){
+  const tipo=document.getElementById('lim-tipo').value;
+  if(!tipo){ toast('Seleccione un tipo de límite','t-err'); return; }
+  toast('Límite guardado correctamente','t-ok');
+  closeModal('modal-nuevolimite');
+}
+
+// ── USUARIOS ──────────────────────────────────────────────────────────
+function editUser(i){
+  const u=usersData[i];
+  document.getElementById('eu-nombre').value=u.nombre.split(' ')[0];
+  document.getElementById('eu-apellido').value=u.nombre.split(' ').slice(1).join(' ');
+  document.getElementById('eu-email').value=u.email;
+  openModal('modal-editusuario');
+}
+function crearUsuario(){
+  const nombre=document.getElementById('u-nombre').value;
+  const apellido=document.getElementById('u-apellido').value;
+  const email=document.getElementById('u-email').value;
+  if(!nombre||!email){ toast('Complete nombre y correo','t-err'); return; }
+  usersData.push({nombre:`${nombre} ${apellido}`,email,rol:'Operador',color:'#374151',initials:(nombre[0]+(apellido[0]||'')).toUpperCase(),activo:true});
+  renderUsers();
+  toast(`Usuario ${nombre} creado. Contraseña enviada a ${email}`,'t-ok');
+  closeModal('modal-nuevousuario');
+  document.getElementById('u-nombre').value='';
+  document.getElementById('u-apellido').value='';
+  document.getElementById('u-email').value='';
+}
+function desactivarUsuario(){
+  toast('Usuario desactivado. Ya no podrá iniciar sesión.','t-warn');
+  closeModal('modal-editusuario');
+  renderUsers();
+}
+
+// ── REPORTES ─────────────────────────────────────────────────────────
+function generarReporte(){
+  closeModal('modal-reporte');
+  toast('Generando reporte... descargando en segundos','t-ok');
+  setTimeout(()=>toast('Reporte descargado ✓','t-ok'),1800);
+}
+
+// ── WEBHOOKS ─────────────────────────────────────────────────────────
+function agregarWebhook(){
+  const evento=document.getElementById('wh-event').value;
+  const url=document.getElementById('wh-url').value;
+  if(!url){ toast('Ingrese la URL del webhook','t-err'); return; }
+  webhooksData.push({evento,url,ok:true});
+  renderWebhooks();
+  toast('Webhook configurado correctamente','t-ok');
+  closeModal('modal-nuevowebhook');
+}
+function eliminarWebhook(i){
+  webhooksData.splice(i,1);
+  renderWebhooks();
+  toast('Webhook eliminado','t-warn');
+}
+
+// ── SECRET KEY ────────────────────────────────────────────────────────
+let skVisible=false;
+function toggleSK(){
+  const el=document.getElementById('sk-input');
+  skVisible=!skVisible;
+  el.value=skVisible?'sk_catem_prod_a1b2c3d4e5f6g7h8i9j0k1l2m3':'sk_••••••••••••••••••••••••••••••';
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────
+function doLogin(){
+  const email=document.getElementById('login-email').value;
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){ toast('Ingrese correo y contraseña','t-err'); return; }
+  document.getElementById('login-step1').style.display='none';
+  document.getElementById('login-step2').style.display='flex';
+  document.getElementById('login-step2').style.flexDirection='column';
+  document.getElementById('login-step2').style.justifyContent='center';
+  toast('Contraseña correcta — verificación OTP requerida','t-ok');
+}
+
+function otpNext(i){
+  const val=document.getElementById('otp'+i).value;
+  if(val && i<5) document.getElementById('otp'+(i+1)).focus();
+  // auto-verify when all 6 filled
+  const all=[0,1,2,3,4,5].map(n=>document.getElementById('otp'+n).value).join('');
+  if(all.length===6) setTimeout(doOTP,300);
+}
+
+function doOTP(){
+  const code=[0,1,2,3,4,5].map(n=>document.getElementById('otp'+n).value).join('');
+  if(code.length<6){ toast('Ingrese los 6 dígitos','t-err'); return; }
+  toast('Acceso verificado ✓ Bienvenido, Miguel','t-ok');
+  setTimeout(()=>{
+    // reset OTP
+    [0,1,2,3,4,5].forEach(n=>{const el=document.getElementById('otp'+n);el.value='';});
+    document.getElementById('login-step1').style.display='flex';
+    document.getElementById('login-step1').style.flexDirection='column';
+    document.getElementById('login-step1').style.justifyContent='center';
+    document.getElementById('login-step2').style.display='none';
+    nav('dashboard');
+  },600);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+// Escape key closes any open modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.overlay.open').forEach(function(o){ o.classList.remove('open'); });
+  }
+});
+renderDash();
+renderTx();
+renderUsers();
+renderWebhooks();
+</script>
+</body>
+</html>
